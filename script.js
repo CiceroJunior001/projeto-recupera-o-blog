@@ -152,3 +152,170 @@ io.on('connection', (socket) => {
 });
 
 server.listen(3000, () => console.log('Servidor rodando na porta 3000'));
+
+// js/app.js
+document.addEventListener("DOMContentLoaded", () => {
+  initAuth();
+  initPosts();
+  initOnline();
+
+  // Sistema de Gerenciamento de Abas/Views
+  const views = ['feedView', 'createPostView', 'loginView', 'registerView', 'profileView'];
+  
+  window.switchView = (targetViewId) => {
+    views.forEach(view => {
+      document.getElementById(view).classList.add('hidden');
+    });
+    document.getElementById(targetViewId).classList.remove('hidden');
+  };
+
+  document.getElementById('navHome').addEventListener('click', () => switchView('feedView'));
+  document.getElementById('navCreatePost').addEventListener('click', () => switchView('createPostView'));
+  document.getElementById('navLogin').addEventListener('click', () => switchView('loginView'));
+  document.getElementById('navRegister').addEventListener('click', () => switchView('registerView'));
+  document.getElementById('navProfile').addEventListener('click', () => {
+    renderProfile();
+    switchView('profileView');
+  });
+});
+
+// js/auth.js
+const API_URL = 'http://localhost:3000/api';
+
+function initAuth() {
+  updateAuthUI();
+
+  // Evento de Login
+  document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const username = document.getElementById('loginUser').value;
+    const password = document.getElementById('loginPass').value;
+
+    const res = await fetch(`${API_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      window.location.reload();
+    } else {
+      alert(data.error);
+    }
+  });
+
+  // Evento de Saída (Sair)
+  document.getElementById('navLogout').addEventListener('click', () => {
+    localStorage.clear();
+    window.location.reload();
+  });
+}
+
+function updateAuthUI() {
+  const token = localStorage.getItem('token');
+  if (token) {
+    document.querySelectorAll('.auth-only').forEach(el => el.classList.remove('hidden'));
+    document.querySelectorAll('.guest-only').forEach(el => el.classList.add('hidden'));
+  } else {
+    document.querySelectorAll('.auth-only').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.guest-only').forEach(el => el.classList.remove('hidden'));
+  }
+}
+
+function renderProfile() {
+  const user = JSON.parse(localStorage.getItem('user'));
+  if(user) {
+    document.getElementById('profName').innerText = user.name;
+    document.getElementById('profUsername').innerText = `@${user.username}`;
+    document.getElementById('profAvatar').src = user.avatar;
+  }
+}
+
+// js/posts.js
+function initPosts() {
+  loadPosts();
+
+  // Evento de envio de post
+  document.getElementById('postForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const title = document.getElementById('postTitle').value;
+    const content = document.getElementById('postContent').value;
+    const category = document.getElementById('postCategory').value;
+    const image = document.getElementById('postImage').value;
+
+    const token = localStorage.getItem('token');
+
+    const res = await fetch('http://localhost:3000/api/posts', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ title, content, category, image })
+    });
+
+    if (res.ok) {
+      document.getElementById('postForm').reset();
+      switchView('feedView');
+    }
+  });
+}
+
+async function loadPosts() {
+  const res = await fetch('http://localhost:3000/api/posts');
+  const posts = await res.json();
+  const container = document.getElementById('postsContainer');
+  container.innerHTML = '';
+
+  posts.forEach(post => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="post-header">
+        <img src="${post.author.avatar}" class="avatar-img">
+        <div>
+          <h4>${post.author.name}</h4>
+          <small>@${post.author.username} • ${post.category}</small>
+        </div>
+      </div>
+      <h3>${post.title}</h3>
+      <p>${post.content}</p>
+      ${post.image ? `<img src="${post.image}" class="post-image">` : ''}
+      <div class="post-actions">
+        <button class="btn">👍 Curtir (${post.likes.length})</button>
+        <button class="btn">💬 Comentar</button>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+// js/online.js
+function initOnline() {
+  // Inicializa o cliente Socket.io localmente apontando para o servidor backend
+  const socket = io('http://localhost:3000');
+
+  const user = JSON.parse(localStorage.getItem('user'));
+  if (user) {
+    socket.emit('user_connected', user);
+  }
+
+  socket.on('update_online_users', (users) => {
+    const list = document.getElementById('onlineList');
+    list.innerHTML = '';
+    users.forEach(u => {
+      const li = document.createElement('li');
+      li.className = 'online-item';
+      li.innerHTML = `<img src="${u.avatar}" class="avatar-img" style="width:30px;height:30px;"> <span>${u.name} ${u.status}</span>`;
+      list.appendChild(li);
+    });
+  });
+
+  // Escuta atualizações de novos posts em tempo real por outros usuários
+  socket.on('new_post', () => {
+    loadPosts();
+  });
+}

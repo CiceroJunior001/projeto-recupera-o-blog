@@ -1,1 +1,194 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Blog Simples</title>
+    <style>
+        /* --- ESTILIZAÇÃO CSS --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
 
+        body {
+            background-color: #f4f7f6;
+            color: #333;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #2c3e50;
+            color: white;
+            border-radius: 8px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* Formulário de Criação de Post */
+        .post-form {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .post-form h2 {
+            margin-bottom: 15px;
+            font-size: 1.4rem;
+            color: #2c3e50;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            height: 100px;
+        }
+
+        button {
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background-color: #219653;
+        }
+
+        /* Feed de Posts */
+        .posts-feed {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .post-card {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .post-card h3 {
+            margin-bottom: 10px;
+            color: #2c3e50;
+            font-size: 1.6rem;
+        }
+
+        .post-card img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 6px;
+            margin-top: 15px;
+            display: block;
+        }
+
+        .post-card p {
+            line-height: 1.6;
+            color: #555;
+            white-space: pre-line; /* Mantém as quebras de linha do texto */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Meu Blog Pessoal</h1>
+            <p>Compartilhando ideias e imagens</p>
+        </header>
+
+        <section class="post-form">
+            <h2>Criar Nova Publicação</h2>
+            <form id="blogForm">
+                <div class="form-group">
+                    <label for="postTitle">Título</label>
+                    <input type="text" id="postTitle" placeholder="Digite o título do post" required>
+                </div>
+                <div class="form-group">
+                    <label for="postImage">URL da Imagem (Opcional)</label>
+                    <input type="url" id="postImage" placeholder="Ex: https://site.com/imagem.jpg">
+                </div>
+                <div class="form-group">
+                    <label for="postContent">Conteúdo</label>
+                    <textarea id="postContent" placeholder="Escreva o texto do seu post aqui..." required></textarea>
+                </div>
+                <button type="submit">Publicar Post</button>
+            </form>
+        </section>
+
+        <main class="posts-feed" id="postsFeed">
+            </main>
+    </div>
+
+    <script>
+        const blogForm = document.getElementById('blogForm');
+        const postsFeed = document.getElementById('postsFeed');
+
+        blogForm.addEventListener('submit', function(event) {
+            // Evita que a página recarregue ao enviar o formulário
+            event.preventDefault();
+
+            // Pega os valores dos campos
+            const title = document.getElementById('postTitle').value;
+            const imageUrl = document.getElementById('postImage').value;
+            const content = document.getElementById('postContent').value;
+
+            // Cria o elemento do novo post (Card)
+            const postCard = document.createElement('article');
+            postCard.classList.add('post-card');
+
+            // Cria a estrutura interna do post
+            let postHTML = `
+                <h3>${title}</h3>
+                <p>${content}</p>
+            `;
+
+            // Verifica se o usuário colocou um link de imagem. Se sim, adiciona a tag img
+            if (imageUrl.trim() !== "") {
+                postHTML += `<img src="${imageUrl}" alt="Imagem do post: ${title}">`;
+            }
+
+            // Insere o HTML dentro do card
+            postCard.innerHTML = postHTML;
+
+            // Adiciona o novo post no topo do feed
+            postsFeed.prepend(postCard);
+
+            // Limpa o formulário para o próximo post
+            blogForm.reset();
+        });
+    </script>
+</body>
+</html>
